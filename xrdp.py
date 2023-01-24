@@ -13,11 +13,11 @@ import sys
 import subprocess
 import time
 import re
-import pygtk
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 import cairo
-import gtk
 import socket
-pygtk.require('2.0')
 
 class xwin:
 	host = ''
@@ -132,43 +132,61 @@ class xwin:
 	def destroy(self, widget, data=None):
 		if self.xww:
 			os.system("kill {}".format(self.xww.pid + 1))
-		gtk.main_quit()
+		Gtk.main_quit()
 
 	def delete_event(self, widget, event, data=None):
 		return False
 
+	def draw(self, widget, context):
+		context.set_source_rgba(0, 0, 0, 0)
+		context.set_operator(cairo.OPERATOR_SOURCE)
+		context.paint()
+		context.set_operator(cairo.OPERATOR_OVER)
+
 	def __init__(self, width, height):
-		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+		super().__init__()
+
+		self.window = Gtk.Window() #Gtk.WINDOW_TOPLEVEL)
 		self.window.connect("delete_event", self.delete_event)
 		self.window.connect("destroy", self.destroy)
+		self.window.connect('draw', self.draw)
+
 		self.window.set_border_width(0)
 		self.window.set_size_request(width, height + 30)
 		self.window.set_app_paintable(True)
 
 		self.screen = self.window.get_screen()
-		self.rgba = self.screen.get_rgba_colormap()
-		self.window.set_colormap(self.rgba)
-		self.window.connect('expose-event', self.expose)
 
-		self.vbox = gtk.VBox(False, 5)
-		self.hbox = gtk.HBox(False, 3)
-		self.bbox = gtk.HBox(True, 3)
 
-		self.entry = gtk.Entry()
+		visual = self.screen.get_rgba_visual()
+		if visual and self.screen.is_composited():
+			self.window.set_visual(visual)
+
+
+
+		#self.rgba = self.screen.get_rgba_colormap()
+		#self.window.set_colormap(self.rgba)
+		#self.window.connect('expose-event', self.expose)
+
+		self.vbox = Gtk.VBox(False, 5)
+		self.hbox = Gtk.HBox(False, 3)
+		self.bbox = Gtk.HBox(True, 3)
+
+		self.entry = Gtk.Entry()
 		self.entry.set_max_length(0)
 		self.entry.set_size_request(int(width/2), 25)
 		self.entry.connect("activate", self.enter_callback, self.entry)
-		self.spr = gtk.ToggleButton(label='spr')
+		self.spr = Gtk.ToggleButton(label='spr')
 		self.spr.connect("toggled", self.on_button_toggled, 'spr')
-		self.ctrl = gtk.ToggleButton(label='ctrl')
+		self.ctrl = Gtk.ToggleButton(label='ctrl')
 		self.ctrl.connect("toggled", self.on_button_toggled, 'ctrl')
-		self.alt = gtk.ToggleButton(label='alt')
+		self.alt = Gtk.ToggleButton(label='alt')
 		self.alt.connect("toggled", self.on_button_toggled, 'alt')
-		self.enter = gtk.Button(label='Enter')
+		self.enter = Gtk.Button(label='Enter')
 		self.enter.connect("clicked", self.on_enter_clicked)
-		self.backspace = gtk.Button(label='Backspace')
+		self.backspace = Gtk.Button(label='Backspace')
 		self.backspace.connect("clicked", self.on_backspace_clicked)
-		self.shell = gtk.Button(label='R-Shell')
+		self.shell = Gtk.Button(label='R-Shell')
 		self.shell.connect("clicked", self.on_shell_clicked, self.entry)
 
 		self.hbox.add(self.entry)
@@ -179,12 +197,12 @@ class xwin:
 		self.bbox.add(self.backspace)
 		self.bbox.add(self.shell)
 		self.hbox.add(self.bbox)
-
-		self.halign = gtk.Alignment(1, 0, 1, 0)
+		
+		self.halign = Gtk.Alignment()
 		self.halign.add(self.hbox)
 
-		self.allalign = gtk.Alignment(0, 0, 1, 1)
-		self.clickbox = gtk.EventBox()
+		self.allalign = Gtk.Alignment()
+		self.clickbox = Gtk.EventBox()
 		self.clickbox.connect('button-press-event', self.on_click)
 		self.clickbox.set_visible_window(False)
 
@@ -200,7 +218,7 @@ class xwin:
 		self.window.move(100, 100)
 
 	def main(self):
-		gtk.main()
+		Gtk.main()
 
 def valid_ip(address):
     try: 
@@ -210,7 +228,7 @@ def valid_ip(address):
         return False
 
 def main():
-	print """\
+	print ("""\
 	              _       
 	__  ___ __ __| |_ __  
 	\ \/ / '__/ _` | '_ \ 
@@ -218,7 +236,7 @@ def main():
 	/_/\_\_|  \__,_| .__/ 
 	               |_|    
 		X11 Remote Desktop
-	"""
+	""")
 
 	if (len(sys.argv) == 1):
 		print("xrdp.py <host>:<dp>")
@@ -261,26 +279,6 @@ darryn@sensepost.com
 thomas@sensepost.com
 ''')
 		quit()
-	elif (sys.argv[1] == "--authors"):
-		print('''
-Written by
-  ____                                      ___         _   _  
- (|   \                                    / (_)       | | | | 
-  |    | __,   ,_    ,_          _  _     |            | | | | 
- _|    |/  |  /  |  /  |  |   | / |/ |    |     |   |  |/  |/  
-(/\___/ \_/|_/   |_/   |_/ \_/|/  |  |_/   \___/ \_/|_/|__/|__/
-                             /|                                
-                             \|                                
-            and
- ______ _                                  _                                 _                 
-(_) |  | |                                (_|    |             |            | |                
-    |  | |     __   _  _  _    __,   ,      |    |   _  _    __|   _   ,_   | |     __,        
-  _ |  |/ \   /  \_/ |/ |/ |  /  |  / \_    |    |  / |/ |  /  |  |/  /  |  |/ \   /  |  |   | 
- (_/   |   |_/\__/   |  |  |_/\_/|_/ \/      \__/\_/  |  |_/\_/|_/|__/   |_/|   |_/\_/|_/ \_/|/
-                                                                                            /| 
-                                                                                            \| 
-''')
-		quit()
 
 	disp = True
 
@@ -311,8 +309,7 @@ Written by
 
 	try:
 		xwininfo = "xwininfo -root -display {}".format(host)
-		dpinfo = subprocess.check_output(xwininfo, shell=True, stdin=subprocess.PIPE, stderr=subprocess.STDOUT)
-		
+		dpinfo = subprocess.check_output(xwininfo, shell=True, stdin=subprocess.PIPE, stderr=subprocess.STDOUT).decode('ASCII')
 		winid = re.search('Window id: 0x[0-9a-fA-F]+', dpinfo)
 		winid = winid.group(0).split(' ')
 		winid = winid[2]
